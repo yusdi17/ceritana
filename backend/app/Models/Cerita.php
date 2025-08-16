@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\User;
 use App\Models\Provinsi;
+use App\Models\StoryMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -62,5 +63,10 @@ class Cerita extends Model
         if (isset($f['is_published'])) $q->where('is_published', (bool)$f['is_published']);
 
         return $q;
+    }
+
+    public function media()
+    {
+        return $this->hasMany(StoryMedia::class, 'cerita_id')->ordered();
     }
 }
