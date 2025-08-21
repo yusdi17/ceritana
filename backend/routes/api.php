@@ -10,6 +10,7 @@ use App\Http\Controllers\CeritaController;
 use App\Http\Controllers\ProvinsiController;
 use App\Http\Controllers\Auth\ActivationEmail;
 use App\Http\Controllers\StoryMediaController;
+use App\Http\Controllers\PermintaanKontributorController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -23,6 +24,9 @@ Route::post('/auth/google', [Login::class, 'SocialAccount'])->name('google.login
 Route::get('cerita', [CeritaController::class, 'index']);
 Route::get('cerita/slug/{slug}', [CeritaController::class, 'showBySlug']);
 Route::get('cerita/{cerita}', [CeritaController::class, 'show']);
+
+// Cerita Media
+Route::get('cerita/{cerita}/media', [StoryMediaController::class, 'index']);
 
 // Cerita Media
 Route::get('cerita/{cerita}/media', [StoryMediaController::class, 'index']);
@@ -51,4 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('cerita/{cerita}/media/{media}', [StoryMediaController::class, 'update']);
     Route::delete('cerita/{cerita}/media/{media}', [StoryMediaController::class, 'destroy']);
     Route::post('cerita/{cerita}/media/reorder', [StoryMediaController::class, 'reorder']);
+
+    // User req kontributor
+    Route::post('permintaan-kontributor', [PermintaanKontributorController::class, 'store']);
+    // Admin kelola
+    Route::get('permintaan-kontributor', [PermintaanKontributorController::class, 'index']);
+    Route::post('permintaan-kontributor/{permintaan}/approve', [PermintaanKontributorController::class, 'approve']);
+    Route::post('permintaan-kontributor/{permintaan}/reject', [PermintaanKontributorController::class, 'reject']);
 });
