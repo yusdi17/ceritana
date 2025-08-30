@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import landingpage from "../assets/landingpage.svg";
 import landingpage2 from "../assets/landingpage2.svg";
 import landingpage3 from "../assets/landingpage3.svg";
+import Footer from "../components/footer";
+import Navbar from "../components/navbar";
 
 export default function LandingPage() {
     const backgrounds = [
@@ -24,6 +26,7 @@ export default function LandingPage() {
 
     return (
         <div className="relative w-full h-screen overflow-hidden">
+            <Navbar />
             <div className="relative w-full h-full">
                 {backgrounds.map((bg, index) => (
                     <img

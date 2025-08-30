@@ -7,6 +7,8 @@ import ManageCerita from '../admin/pages/cerita-manage';
 import ProvinsiItem from '../admin/pages/provinsi/provinsi-item';
 import ManageProvinsiPage from '../admin/pages/provinsi';
 import CreateProvinsiPage from '../admin/pages/provinsi-create/provinsi-create';
+import LandingPage from '../public/pages';
+import Peta from '../public/pages/peta';
 
 // Route admin
 const router = createBrowserRouter([
@@ -38,7 +40,16 @@ const router = createBrowserRouter([
         path: '/dashboard/provinsi/create',
         element: <CreateProvinsiPage />
       }
-    ]
+    ],
+  },
+  // Route public
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: '/peta',
+    element: <Peta />
   }
 ])
 

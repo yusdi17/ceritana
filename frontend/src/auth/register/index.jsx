@@ -1,14 +1,34 @@
 import { useState } from "react";
+import { registerSchema } from "../../utils/zodSchema";
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import { postRegister } from "../../service/authService";
+import { toast } from "react-toastify";
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
-    const [email, setEmail] = useState("");
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log("Register attempted with:", { email, username, password, confirmPassword });
+    const {register, handleSubmit, formState: {errors}, reset} = useForm({
+        resolver: zodResolver(registerSchema),
+    })
+
+    const {isPending, mutateAsync} = useMutation({
+        mutationFn: (payload) => postRegister(payload)
+    })
+    const onSubmit = async (form) => {
+        try {
+            const res = await mutateAsync(form);
+            toast.success("Register Berhasil!, silahkan cek email untuk aktivasi akun");
+            reset();
+            if (onSwitchToLogin) {
+                onSwitchToLogin();
+            }
+            console.log(res);
+        } catch (error) {
+            toast.error(error.response.data.message);
+            console.log(error);
+        }
+        
     };
 
     if (!isOpen) return null;
@@ -32,7 +52,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     {/* Email */}
                     <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -40,11 +60,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                         </label>
                         <input
                             type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="Masukan email kamu"
                             required
                             className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                            {...register("email")}
                         />
                     </div>
 
@@ -55,11 +74,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                         </label>
                         <input
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
                             placeholder="Masukan username kamu"
                             required
                             className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                            {...register("name")}
                         />
                     </div>
 
@@ -70,11 +88,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                         </label>
                         <input
                             type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="Masukan password kamu"
                             required
                             className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                            {...register("password")}
                         />
                     </div>
 
@@ -85,21 +102,21 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                         </label>
                         <input
                             type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Masukan kembali password kamu"
                             required
                             className="w-full px-3 py-2 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                            {...register("password_confirmation")}
                         />
                     </div>
 
                     {/* Submit */}
                     <button
                         type="submit"
+                        disabled={isPending}
                         style={{ backgroundColor: "#323232" }}
                         className="w-full px-4 py-2.5 font-medium text-white transition-colors rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                     >
-                        Register
+                         {isPending ? "Processing" : "Register"}
                     </button>
                 </form>
 
