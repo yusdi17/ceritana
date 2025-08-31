@@ -9,6 +9,7 @@ import ManageProvinsiPage from '../admin/pages/provinsi';
 import CreateProvinsiPage from '../admin/pages/provinsi-create/provinsi-create';
 import LandingPage from '../public/pages';
 import Peta from '../public/pages/peta';
+import ProtectedRoute from '../public/components/protectedRoute';
 
 // Route admin
 const router = createBrowserRouter([
@@ -48,9 +49,15 @@ const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
-    path: '/peta',
-    element: <Peta />
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: '/peta',
+        element: <Peta />
+      }
+    ]
   }
+
 ])
 
 export default router;
