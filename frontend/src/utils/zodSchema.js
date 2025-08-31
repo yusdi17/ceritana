@@ -8,6 +8,6 @@ export const registerSchema = z.object({
 })
 
 export const loginSchema = registerSchema.omit({
-  username: true,
-  confirmPassword: true
+  name: true,
+  password_confirmation: true
 })

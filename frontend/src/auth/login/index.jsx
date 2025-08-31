@@ -1,12 +1,48 @@
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { use, useState } from "react";
+import { useForm } from "react-hook-form";
+import { loginSchema } from "../../utils/zodSchema";
+import { useMutation } from "@tanstack/react-query";
+import { postLogin } from "../../service/authService";
+import secureLocalStorage from "react-secure-storage";
+import { STORAGE_KEY } from "../../utils/const";
+import { toast } from "react-toastify";
+import { useNavigate} from "react-router-dom"
 
-export default function LoginModal({ isOpen, onClose, onSwitchToRegister  }) {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+export default function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log("Login attempted with:", { email, password });
+    const { register, handleSubmit, formState: { errors }, reset } = useForm({
+        resolver: zodResolver(loginSchema)
+    })
+
+    const navigate = useNavigate();
+
+    const { isPending, mutateAsync } = useMutation({
+        mutationFn: (payload) => postLogin(payload)
+    })
+
+    const onSubmit = async (form) => {
+        try {
+            const res = await mutateAsync(form);
+
+            secureLocalStorage.setItem("token", res.token);
+            secureLocalStorage.setItem("user", res.user);
+
+            toast.success("Login Berhasil!");
+
+            if (res.user.role === "user") {
+                navigate("/peta");
+            }else {
+                navigate("/dashboard");
+            }
+            reset();
+            console.log("Berhasil login");
+            
+        } catch (error) {
+            toast.error(error.response.data.message);
+            console.log(error);
+
+        }
     };
 
     if (!isOpen) return null;
@@ -32,59 +68,59 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister  }) {
                 </div>
 
                 {/* Form */}
-                <div className="space-y-6">
-                    {/* Email */}
-                    <div>
-                        <label className="block mb-3 text-sm font-medium text-gray-700">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Masukan email kamu"
-                            required
-                            className="w-full px-4 py-3 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label className="block mb-3 text-sm font-medium text-gray-700">
-                            Password
-                        </label>
-                        <div className="relative">
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="space-y-6">
+                        {/* Email */}
+                        <div>
+                            <label className="block mb-3 text-sm font-medium text-gray-700">
+                                Email
+                            </label>
                             <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Masukan password kamu"
+                                type="email"
+                                placeholder="Masukan email kamu"
                                 required
                                 className="w-full px-4 py-3 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                {...register("email")}
                             />
-                            <button
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <label className="block mb-3 text-sm font-medium text-gray-700">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="password"
+                                    placeholder="Masukan password kamu"
+                                    required
+                                    className="w-full px-4 py-3 placeholder-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                    {...register("password")}
+                                />
+                                {/* <button
                                 type="button"
                                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                             >
-                            </button>
+                            </button> */}
+                            </div>
+                            <div className="mt-2 text-right">
+                                <button type="button" className="text-sm text-gray-600 hover:text-gray-800">
+                                    Forgot Password?
+                                </button>
+                            </div>
                         </div>
-                        <div className="mt-2 text-right">
-                            <button type="button" className="text-sm text-gray-600 hover:text-gray-800">
-                                Forgot Password?
-                            </button>
-                        </div>
+
+                        {/* Submit */}
+                        <button
+                            type="submit"
+                            style={{ backgroundColor: "#323232" }}
+                            className="w-full px-4 py-3 font-medium text-white transition-colors rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                        >
+                            {isPending ? "Processing" : "Login"}
+                        </button>
+
                     </div>
-
-                    {/* Submit */}
-                    <button
-                        onClick={handleSubmit}
-                        style={{ backgroundColor: "#323232" }}
-                        className="w-full px-4 py-3 font-medium text-white transition-colors rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                    >
-                        Login
-                    </button>
-
-                </div>
+                </form>
 
                 {/* Google Login */}
                 <button
@@ -106,7 +142,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister  }) {
                     <p>
                         Don't have an account?{" "}
                         <button
-                            onClick={onSwitchToRegister}   
+                            onClick={onSwitchToRegister}
                             className="font-medium text-gray-900 hover:underline"
                         >
                             Register
