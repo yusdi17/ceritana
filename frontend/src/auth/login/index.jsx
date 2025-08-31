@@ -1,22 +1,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { use, useState } from "react";
 import { useForm } from "react-hook-form";
 import { loginSchema } from "../../utils/zodSchema";
 import { useMutation } from "@tanstack/react-query";
 import { postLogin } from "../../service/authService";
 import secureLocalStorage from "react-secure-storage";
-import { STORAGE_KEY } from "../../utils/const";
 import { toast } from "react-toastify";
-import { useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onSuccess }) {
 
     const { register, handleSubmit, formState: { errors }, reset } = useForm({
         resolver: zodResolver(loginSchema)
     })
-
     const navigate = useNavigate();
-
     const { isPending, mutateAsync } = useMutation({
         mutationFn: (payload) => postLogin(payload)
     })
@@ -31,20 +29,44 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onSucc
             toast.success("Login Berhasil!");
             if (res.user.role === "user") {
                 navigate("/");
-            }else {
+            } else {
                 navigate("/dashboard");
             }
             reset();
             onSuccess?.(res)
             onClose?.();
             console.log("Berhasil login");
-            
+
         } catch (error) {
             toast.error(error.response.data.message);
             console.log(error);
 
         }
     };
+
+    const authGoogle = useGoogleLogin({
+        scope: "openid email profile",
+        prompt: "select_account",
+        onSuccess: async ({ access_token }) => {
+            try {
+                const res = await axios.post("http://127.0.0.1:8000/api/auth/google", {
+                    access_token,
+                });
+
+                secureLocalStorage.setItem("token", res.data.token);
+                secureLocalStorage.setItem("user", res.data.user);
+
+                toast.success("Login Google berhasil!");
+                onClose?.();
+                onSuccess?.(res.data);
+            } catch (err) {
+                const msg = err?.response?.data?.message || "Login Google gagal";
+                toast.error(msg);
+                console.error(err);
+            }
+        },
+        onError: () => toast.error("Login Google gagal!"),
+    });
 
     if (!isOpen) return null;
 
@@ -125,6 +147,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onSucc
 
                 {/* Google Login */}
                 <button
+                    type="button"
+                    onClick={() => authGoogle()}
                     style={{ backgroundColor: "#323232" }}
                     className="flex items-center justify-center w-full px-4 py-3 mt-3 font-medium text-white transition-colors rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
