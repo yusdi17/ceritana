@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import LoginModal from "../../auth/login";
 import RegisterModal from "../../auth/register";
+import secureLocalStorage from "react-secure-storage";
 
 export default function Navbar() {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+
+    const user = secureLocalStorage.getItem("user");
 
     return (
         <>
@@ -21,20 +24,32 @@ export default function Navbar() {
                 </Link>
 
                 {/* Auth Buttons */}
-                <div className="flex items-center space-x-3">
-                    <button
-                        onClick={() => setIsLoginModalOpen(true)}
-                        className="px-4 py-1.5 text-sm font-medium text-white bg-[#323232] rounded-full shadow-sm transition duration-200 hover:bg-black focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
-                    >
-                        Login
-                    </button>
-                    <button
-                        onClick={() => setIsRegisterOpen(true)}
-                        className="px-4 py-1.5 text-sm font-medium text-[#323232] bg-white border border-gray-300 rounded-full shadow-sm transition duration-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
-                    >
-                        Register
-                    </button>
-                </div>
+                {user ? (
+                    <>
+                        <div className="flex items-center space-x-3">
+                            <span className="ml-2 text-sm font-semibold text-white">Hi, {user.name}</span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="flex items-center space-x-3">
+                            <button
+                                onClick={() => setIsLoginModalOpen(true)}
+                                className="px-4 py-1.5 text-sm font-medium text-white bg-[#323232] rounded-full shadow-sm transition duration-200 hover:bg-black focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                            >
+                                Login
+                            </button>
+                            <button
+                                onClick={() => setIsRegisterOpen(true)}
+                                className="px-4 py-1.5 text-sm font-medium text-[#323232] bg-white border border-gray-300 rounded-full shadow-sm transition duration-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                            >
+                                Register
+                            </button>
+                        </div>
+                    </>
+                )}
+
+
             </nav>
 
             {/* Login Modal */}

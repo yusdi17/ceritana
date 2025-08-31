@@ -1,7 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import secureLocalStorage from "react-secure-storage";
 
 export default function Header(){
+
+    const user = secureLocalStorage.getItem("user");
+
   return (
     <div id="TopBar" className="flex items-center justify-between gap-[30px]">
                 <form action="" className="flex items-center w-full max-w-[450px] rounded-full border border-[#CFDBEF] gap-3 px-5 transition-all duration-300 focus-within:ring-2 focus-within:ring-[#662FFF]">
@@ -10,8 +14,8 @@ export default function Header(){
                 </form>
                 <div className="relative flex items-center justify-end gap-[14px] group">
                     <div className="text-right">
-                        <p className="font-semibold">Puyol Ferguso</p>
-                        <p className="text-sm leading-[21px] text-[#838C9D]">Admin</p>
+                        <p className="font-semibold">{user.name}</p>
+                        <p className="text-sm leading-[21px] text-[#838C9D]">{user.role}</p>
                     </div>
                     <button type="button" id="profileButton" className="flex shrink-0 w-[50px] h-[50px] rounded-full overflow-hidden">
                         <img src="/assets/images/photos/photo-1.png" className="w-full h-full object-cover" alt="profile photos"/>
