@@ -10,39 +10,46 @@ import CreateProvinsiPage from '../admin/pages/provinsi-create/provinsi-create';
 import LandingPage from '../public/pages';
 import Peta from '../public/pages/peta';
 import ProtectedRoute from '../public/components/protectedRoute';
+import RequireAdmin from '../public/components/requireAdmin';
 
 // Route admin
 const router = createBrowserRouter([
   {
-    path: '/dashboard',
-    element: <LayoutDashboard />,
+    element: <RequireAdmin />,
     children: [
       {
         path: '/dashboard',
-        element: <DashboardAmin />
+        element: <LayoutDashboard />,
+        children: [
+          {
+            index: true,
+            element: <DashboardAmin />
+          },
+          {
+            path: '/dashboard/cerita',
+            element: <CeritaPage />
+          },
+          {
+            path: '/dashboard/cerita/create',
+            element: <CreateCeritaPage />
+          },
+          {
+            path: '/dashboard/cerita/:id/manage',
+            element: <ManageCerita />
+          },
+          {
+            path: '/dashboard/provinsi',
+            element: <ManageProvinsiPage />
+          },
+          {
+            path: '/dashboard/provinsi/create',
+            element: <CreateProvinsiPage />
+          }
+        ],
       },
-      {
-        path: '/dashboard/cerita',
-        element: <CeritaPage />
-      },
-      {
-        path: '/dashboard/cerita/create',
-        element: <CreateCeritaPage />
-      },
-      {
-        path: '/dashboard/cerita/:id/manage',
-        element: <ManageCerita />
-      },
-      {
-        path: '/dashboard/provinsi',
-        element: <ManageProvinsiPage />
-      },
-      {
-        path: '/dashboard/provinsi/create',
-        element: <CreateProvinsiPage />
-      }
-    ],
+    ]
   },
+  
   // Route public
   {
     path: '/',

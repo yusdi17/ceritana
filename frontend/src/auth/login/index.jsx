@@ -9,7 +9,7 @@ import { STORAGE_KEY } from "../../utils/const";
 import { toast } from "react-toastify";
 import { useNavigate} from "react-router-dom"
 
-export default function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
+export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onSuccess }) {
 
     const { register, handleSubmit, formState: { errors }, reset } = useForm({
         resolver: zodResolver(loginSchema)
@@ -29,13 +29,14 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
             secureLocalStorage.setItem("user", res.user);
 
             toast.success("Login Berhasil!");
-
             if (res.user.role === "user") {
-                navigate("/peta");
+                navigate("/");
             }else {
                 navigate("/dashboard");
             }
             reset();
+            onSuccess?.(res)
+            onClose?.();
             console.log("Berhasil login");
             
         } catch (error) {
