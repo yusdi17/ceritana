@@ -11,3 +11,7 @@ export const loginSchema = registerSchema.omit({
   name: true,
   password_confirmation: true
 })
+
+export const pulauSchema = z.object({
+  name: z.string().min(3),
+})

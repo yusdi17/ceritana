@@ -26,11 +26,6 @@ export default function ManageCerita() {
           <h1 className="font-extrabold text-[28px] leading-[42px]">Edit Cerita</h1>
           <p className="text-[#838C9D] mt-[1]">Klik daerahnya jelajahi ceritanya</p>
         </div>
-        <div className="flex items-center gap-3">
-          <a href="#" className="w-fit rounded-full border border-[#060A23] p-[14px_20px] font-semibold text-nowrap">
-            Import from BWA
-          </a>
-        </div>
       </header>
       <form action="manage-course.html" className="flex flex-col w-[550px] rounded-[30px] p-[30px] gap-[30px] bg-[#F8FAFB]">
         <div className="flex flex-col gap-[10px]">
