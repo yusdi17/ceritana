@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import secureLocalStorage from "react-secure-storage";
+import { postLogout } from "../../service/authService";
 
 export default function Header(){
 
@@ -9,11 +10,20 @@ export default function Header(){
     )
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        secureLocalStorage.removeItem("token");
-        secureLocalStorage.removeItem("user");
-        setCurrentUser(null);
-        navigate("/", { replace: true });
+    const handleLogout = async () => {
+        try {
+            await postLogout();
+            console.log("Logout Berhasil");
+            
+        } catch (error) {
+            console.log(error);
+            
+        } finally {
+            secureLocalStorage.removeItem("token");
+            secureLocalStorage.removeItem("user");
+            setCurrentUser(null);
+            navigate("/", { replace: true });
+        }
     }
 
   return (

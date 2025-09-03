@@ -11,6 +11,7 @@ import LandingPage from '../public/pages';
 import Peta from '../public/pages/peta';
 import ProtectedRoute from '../public/components/protectedRoute';
 import RequireAdmin from '../public/components/requireAdmin';
+import ManageUser from '../admin/pages/users/manageUser';
 
 // Route admin
 const router = createBrowserRouter([
@@ -44,12 +45,16 @@ const router = createBrowserRouter([
           {
             path: '/dashboard/provinsi/create',
             element: <CreateProvinsiPage />
+          },
+          {
+            path: '/dashboard/manage-users',
+            element: <ManageUser/>
           }
         ],
       },
     ]
   },
-  
+
   // Route public
   {
     path: '/',
