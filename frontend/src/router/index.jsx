@@ -12,6 +12,9 @@ import Peta from '../public/pages/peta';
 import ProtectedRoute from '../public/components/protectedRoute';
 import RequireAdmin from '../public/components/requireAdmin';
 import ManageUser from '../admin/pages/users/manageUser';
+import Kalender from '../public/pages/kalender';
+import Cerita from '../public/pages/cerita';
+import KalenderBudaya from '../public/pages/kalender';
 
 // Route admin
 const router = createBrowserRouter([
@@ -48,13 +51,14 @@ const router = createBrowserRouter([
           },
           {
             path: '/dashboard/manage-users',
-            element: <ManageUser/>
+            element: <ManageUser />
           }
         ],
       },
     ]
   },
 
+  // Route public
   // Route public
   {
     path: '/',
@@ -65,10 +69,19 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/peta',
-        element: <Peta />
+        element: <Peta />,
+      },
+      {
+        path: '/kalender',
+        element: <KalenderBudaya />,
+      },
+      {
+        path: '/cerita',
+        element: <Cerita />,
       }
     ]
   }
+
 
 ])
 

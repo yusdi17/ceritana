@@ -23,6 +23,13 @@ export default function Navbar() {
                     <span className="ml-2 text-sm font-semibold text-white">Ceritana</span>
                 </Link>
 
+                {/* Menu Navigasi */}
+                <div className="flex space-x-8 font-medium text-white">
+                    <Link to="/" className="hover:text-gray-300">Home</Link>
+                    <Link to="/peta" className="hover:text-gray-300">Peta Cerita</Link>
+                    <Link to="/kalender" className="hover:text-gray-300">Kalender Budaya</Link>
+                </div>
+
                 {/* Auth Buttons */}
                 {user ? (
                     <>
