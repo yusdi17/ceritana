@@ -15,3 +15,19 @@ export const loginSchema = registerSchema.omit({
 export const pulauSchema = z.object({
   name: z.string().min(3),
 })
+
+export const ceritaSchema = z.object({
+  judul: z.string().min(3, "Judul minimal 3 karakter"),
+  provinsi_id: z.string().min(1, "Provinsi wajib diisi"),
+  is_published: z.enum(["true", "false"], { required_error: "Status wajib" }),
+  cerita: z.string().min(3, "Konten minimal 3 karakter"),
+  thumbnail: z.any().refine((f) => f?.length === 1, "Thumbnail wajib diunggah"),
+})
+
+export const ceritaSchemaEdit = z.object({
+  judul: z.string().min(3),
+  provinsi_id: z.string().min(1),
+  is_published: z.enum(['true','false']),
+  cerita: z.string().min(3),
+  thumbnail: z.any().optional(),
+});

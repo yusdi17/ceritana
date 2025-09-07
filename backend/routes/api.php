@@ -24,6 +24,7 @@ Route::post('/auth/google', [Login::class, 'SocialAccount'])->name('google.login
 
 
 
+Route::get('/provinsi', [ProvinsiController::class, 'index']);
 
 
 Route::get('/cerita', [CeritaController::class, 'index']);
@@ -35,21 +36,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [Logout::class, 'logout']);
 
     //Provinsi
-    Route::get('/provinsi', [ProvinsiController::class, 'index']);
     Route::get('/provinsi/{id}', [ProvinsiController::class, 'show']);
     Route::post('/provinsi', [ProvinsiController::class, 'store']);
     Route::put('/provinsi/{id}', [ProvinsiController::class, 'update']);
     Route::delete('/provinsi/{id}', [ProvinsiController::class, 'destroy']);
 
     // Cerita
-    Route::post('/cerita', [CeritaController::class, 'store']);
-    Route::patch('/cerita/{ceritum}', [CeritaController::class, 'update']);
-    Route::delete('/cerita/{ceritum}', [CeritaController::class, 'destroy']);
-    Route::post('/cerita/{ceritum}/publish', [CeritaController::class, 'publish']);
-
-
-    Route::get('/cerita/{ceritum}', [CeritaController::class, 'show']);
+    Route::get('/cerita', [CeritaController::class, 'index']);
     Route::get('/cerita/slug/{slug}', [CeritaController::class, 'showBySlug']);
+    Route::get('/cerita/{cerita}', [CeritaController::class, 'show']);
+    Route::post('/cerita', [CeritaController::class, 'store']);
+    Route::put('/cerita/{cerita}', [CeritaController::class, 'update']);
+    Route::delete('/cerita/{cerita}', [CeritaController::class, 'destroy']);
+    Route::post('/cerita/{cerita}/publish', [CeritaController::class, 'publish']);
 
     // Story Media
     Route::post('cerita/{cerita}/media', [StoryMediaController::class, 'store']);

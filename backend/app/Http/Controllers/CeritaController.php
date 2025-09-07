@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class CeritaController extends Controller
 {
@@ -18,22 +19,24 @@ class CeritaController extends Controller
                 $s = trim($request->query('search'));
                 $qq->where(function ($w) use ($s) {
                     $w->where('judul', 'like', "%{$s}%")
-                        ->orWhere('summary', 'like', "%{$s}%");
+                      ->orWhere('cerita', 'like', "%{$s}%");
                 });
             })
-            ->when($request->filled('provinsi_id'), fn($qq) => $qq->where('provinsi_id', $request->query('provinsi_id')))
+            ->when(
+                $request->filled('provinsi_id'),
+                fn($qq) => $qq->where('provinsi_id', $request->query('provinsi_id'))
+            )
             ->orderByDesc('published_at')
             ->orderByDesc('id');
 
-        // Non-admin atau tidak minta include_unpublished => hanya yang published
         $user = $request->user();
         $includeUnpublished = $request->boolean('include_unpublished');
+
         if (!$user || $user->role !== 'admin' || !$includeUnpublished) {
             $q->where('is_published', true);
         } else {
-            // admin boleh override dengan is_published explicit jika ingin
             if ($request->filled('is_published')) {
-                $q->where('is_published', (bool) $request->query('is_published'));
+                $q->where('is_published', filter_var($request->query('is_published'), FILTER_VALIDATE_BOOLEAN));
             }
         }
 
@@ -41,47 +44,38 @@ class CeritaController extends Controller
         return response()->json($q->paginate($perPage));
     }
 
-    /**
-     * GET /cerita/{ceritum}
-     */
-    public function show(Cerita $ceritum)
+    public function show(Cerita $cerita)
     {
-        if (!$ceritum->is_published) {
-            $this->authorizeAdmin(auth()->user()); // unpublished hanya admin
-        }
-
-        $ceritum->load(['provinsi:id,name,lat,lng', 'user:id,name']);
-        return response()->json($ceritum);
-    }
-
-    /**
-     * GET /cerita/slug/{slug}
-     */
-    public function showBySlug(string $slug)
-    {
-        $ceritum = Cerita::where('slug', $slug)->firstOrFail();
-
-        if (!$ceritum->is_published) {
+        if (!$cerita->is_published) {
             $this->authorizeAdmin(auth()->user());
         }
 
-        $ceritum->load(['provinsi:id,name,lat,lng', 'user:id,name']);
-        return response()->json($ceritum);
+        $cerita->load(['provinsi:id,name', 'user:id,name']);
+        return response()->json($cerita);
     }
 
-    /**
-     * POST /cerita  (admin only)
-     */
+    public function showBySlug(string $slug)
+    {
+        $cerita = Cerita::where('slug', $slug)->firstOrFail();
+
+        if (!$cerita->is_published) {
+            $this->authorizeAdmin(auth()->user());
+        }
+
+        $cerita->load(['provinsi:id,name', 'user:id,name']);
+        return response()->json($cerita);
+    }
+
     public function store(Request $request)
     {
         $this->authorizeAdmin($request->user());
 
         $data = $request->validate([
             'provinsi_id'  => ['required', 'exists:provinsi,id'],
-            'judul'        => ['required', 'string', 'max:200'],
+            'judul'        => ['required', 'string', 'max:200', 'unique:cerita,judul'],
             'slug'         => ['nullable', 'string', 'max:220', 'unique:cerita,slug'],
-            'summary'      => ['nullable', 'string'],
             'cerita'       => ['required', 'string'],
+            'thumbnail'    => ['nullable', 'image'],
             'is_published' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
         ]);
@@ -91,8 +85,6 @@ class CeritaController extends Controller
         if (empty($data['slug'])) {
             $data['slug'] = $this->makeUniqueSlug($data['judul']);
         }
-
-        // Normalisasi publish fields
         $isPublished = (bool) ($data['is_published'] ?? false);
         $publishedAt = $data['published_at'] ?? null;
 
@@ -104,82 +96,77 @@ class CeritaController extends Controller
             $data['published_at'] = null;
         }
 
-        $cerita = Cerita::create($data);
+         $cerita = DB::transaction(function () use ($request, $data) {
+        if ($request->hasFile('thumbnail')) {
+            $path = $request->file('thumbnail')->store('thumbnails', 'public');
+            $data['thumbnail'] = $path;
+        }
 
-        return response()->json($cerita->load(['provinsi:id,name', 'user:id,name']), 201);
+        return Cerita::create($data);
+    });
+
+
+        return response()->json(
+            $cerita->load(['provinsi:id,name', 'user:id,name']),
+            201
+        );
     }
 
-    /**
-     * PUT/PATCH /cerita/{ceritum}  (admin only)
-     */
-    public function update(Request $request, Cerita $ceritum)
+    public function update(Request $request, Cerita $cerita)
     {
         $this->authorizeAdmin($request->user());
 
         $data = $request->validate([
             'provinsi_id'  => ['sometimes', 'required', 'exists:provinsi,id'],
-            'judul'        => ['sometimes', 'required', 'string', 'max:200'],
-            'slug'         => ['nullable', 'string', 'max:220', Rule::unique('cerita', 'slug')->ignore($ceritum->id)],
-            'summary'      => ['nullable', 'string'],
+            'judul'        => [
+                'sometimes', 'required', 'string', 'max:200',
+                Rule::unique('cerita', 'judul')->ignore($cerita->id),
+            ],
+            'slug'         => [
+                'nullable', 'string', 'max:220',
+                Rule::unique('cerita', 'slug')->ignore($cerita->id),
+            ],
             'cerita'       => ['sometimes', 'required', 'string'],
             'is_published' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
         ]);
-
-        // Auto-generate slug bila judul diubah dan slug kosong
         if (array_key_exists('judul', $data) && empty($data['slug'])) {
-            $data['slug'] = $this->makeUniqueSlug($data['judul'], $ceritum->id);
+            $data['slug'] = $this->makeUniqueSlug($data['judul'], $cerita->id);
         }
-
-        // Normalisasi publish fields bila ada salah satu field terkait
-        if (
-            array_key_exists('is_published', $data) ||
-            array_key_exists('published_at', $data)
-        ) {
-            $isPublished = (bool) ($data['is_published'] ?? $ceritum->is_published);
-            $publishedAt = $data['published_at'] ?? $ceritum->published_at;
+        if (array_key_exists('is_published', $data) || array_key_exists('published_at', $data)) {
+            $isPublished = (bool) ($data['is_published'] ?? $cerita->is_published);
+            $publishedAt = $data['published_at'] ?? $cerita->published_at;
 
             if ($isPublished) {
                 $data['is_published'] = true;
-                $data['published_at'] = $publishedAt ? Carbon::parse($publishedAt) : ($ceritum->published_at ?? now());
+                $data['published_at'] = $publishedAt ? Carbon::parse($publishedAt) : ($cerita->published_at ?? now());
             } else {
                 $data['is_published'] = false;
                 $data['published_at'] = null;
             }
         }
 
-        $ceritum->update($data);
+        $cerita->update($data);
 
-        return response()->json($ceritum->load(['provinsi:id,name', 'user:id,name']));
+        return response()->json($cerita->load(['provinsi:id,name', 'user:id,name']));
     }
-
-    /**
-     * DELETE /cerita/{ceritum}  (admin only)
-     */
-    public function destroy(Request $request, Cerita $ceritum)
+    public function destroy(Request $request, Cerita $cerita)
     {
         $this->authorizeAdmin($request->user());
-        $ceritum->delete();
+        $cerita->delete();
 
         return response()->json(['message' => 'Cerita deleted successfully.']);
     }
-
-    /**
-     * POST /cerita/{ceritum}/publish  (admin only)
-     * (opsional: endpoint khusus publish cepat)
-     */
-    public function publish(Request $request, Cerita $ceritum)
+    public function publish(Request $request, Cerita $cerita)
     {
         $this->authorizeAdmin($request->user());
 
-        $ceritum->is_published = true;
-        $ceritum->published_at = $ceritum->published_at ?? now();
-        $ceritum->save();
+        $cerita->is_published = true;
+        $cerita->published_at = $cerita->published_at ?? now();
+        $cerita->save();
 
-        return response()->json($ceritum->load(['provinsi:id,name', 'user:id,name']));
+        return response()->json($cerita->load(['provinsi:id,name', 'user:id,name']));
     }
-
-    // ================== Helpers ==================
 
     private function makeUniqueSlug(string $judul, ?int $ignoreId = null): string
     {
@@ -189,8 +176,8 @@ class CeritaController extends Controller
 
         while (
             Cerita::where('slug', $slug)
-            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
-            ->exists()
+                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
         ) {
             $slug = "{$base}-{$i}";
             $i++;
@@ -201,11 +188,7 @@ class CeritaController extends Controller
 
     private function authorizeAdmin($user): void
     {
-        if (!$user) {
-            abort(401, 'Unauthorized.');
-        }
-        if ($user->role !== 'admin') {
-            abort(403, 'Forbidden.');
-        }
+        if (!$user) abort(401, 'Unauthorized.');
+        if ($user->role !== 'admin') abort(403, 'Forbidden.');
     }
 }

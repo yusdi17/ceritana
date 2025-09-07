@@ -12,14 +12,6 @@ class ProvinsiController extends Controller
 {
     public function index(Request $request)
     {
-        $authUser = $request->user();
-        if (!$authUser) {
-            return response()->json(['message' => 'Unauthorized.'], 401);
-        }
-        if ($authUser->role !== "admin") {
-            return response()->json(['message' => 'Anda bukan admin.'], 403);
-        }
-
         $provinsi = Provinsi::all();
         return response()->json($provinsi);
     }

@@ -19,7 +19,7 @@ class Cerita extends Model
         'user_id',
         'judul',
         'slug',
-        'summary',
+        'thumbnail',
         'cerita',
         'is_published',
         'published_at'
@@ -66,5 +66,12 @@ class Cerita extends Model
     public function media()
     {
         return $this->hasMany(StoryMedia::class, 'cerita_id')->ordered();
+    }
+
+    protected $appends = ['thumbnail_url'];
+
+    public function getThumbnailUrlAttribute()
+    {
+        return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
     }
 }
