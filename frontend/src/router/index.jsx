@@ -12,6 +12,8 @@ import Peta from '../public/pages/peta';
 import ProtectedRoute from '../public/components/protectedRoute';
 import RequireAdmin from '../public/components/requireAdmin';
 import ManageUser from '../admin/pages/users/manageUser';
+import CeritaPulauPage from '../public/pages/cerita/CeritaPage';
+import CeritaDetailPage from '../public/pages/cerita/CeritaDetailPage';
 
 // Route admin
 const router = createBrowserRouter([
@@ -66,6 +68,14 @@ const router = createBrowserRouter([
       {
         path: '/peta',
         element: <Peta />
+      },
+      {
+        path: '/cerita/:pulauKey',
+        element: <CeritaPulauPage />
+      },
+      {
+        path: "/story/:slug" ,
+        element: <CeritaDetailPage />
       }
     ]
   }

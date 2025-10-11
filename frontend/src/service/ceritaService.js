@@ -35,3 +35,5 @@ export const deleteCerita = async (id) =>
   apiInstance.delete(`/cerita/${id}`).then((res) => res.data);
 export const getProvinsi = async (data) =>
   apiInstance.get('/provinsi', data).then((res) => res.data);
+export const getCeritaBySlug = (slug) =>
+  apiInstance.get(`/cerita/slug/${slug}`).then(res => res.data);
