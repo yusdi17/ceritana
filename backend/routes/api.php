@@ -63,7 +63,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('permintaan-kontributor/{permintaan}/approve', [PermintaanKontributorController::class, 'approve']);
     Route::post('permintaan-kontributor/{permintaan}/reject', [PermintaanKontributorController::class, 'reject']);
 
-    // Manage user
-    Route::get('/manage-users', [UserController::class, 'index']);
-    Route::delete('/manage-users/{id}', [UserController::class, 'destroy']);
+    //test auto deploy
 });
