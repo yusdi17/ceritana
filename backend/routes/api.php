@@ -62,4 +62,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('permintaan-kontributor', [PermintaanKontributorController::class, 'index']);
     Route::post('permintaan-kontributor/{permintaan}/approve', [PermintaanKontributorController::class, 'approve']);
     Route::post('permintaan-kontributor/{permintaan}/reject', [PermintaanKontributorController::class, 'reject']);
+
+    //test auto deploy
 });
