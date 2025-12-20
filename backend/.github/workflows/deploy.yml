@@ -1,0 +1,39 @@
+name: Auto Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Direktori project
+            cd ceritana/backend
+            
+            # Tarik kodingan terbaru
+            git pull origin main
+            
+            # Update file .env jika ada perubahan
+            # cp .env.example .env 
+            
+            # Build ulang Docker
+            docker compose up -d --build
+            
+            # Jalankan migrasi database
+            docker compose exec -T app php artisan migrate --force
+            
+            # Bersihkan cache
+            docker compose exec -T app php artisan optimize:clear
