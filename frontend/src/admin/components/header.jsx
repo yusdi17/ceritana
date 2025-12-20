@@ -1,7 +1,31 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import secureLocalStorage from "react-secure-storage";
+import { postLogout } from "../../service/authService";
 
 export default function Header(){
+
+    const [currentUser, setCurrentUser] = useState(
+        secureLocalStorage.getItem("user")
+    )
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await postLogout();
+            console.log("Logout Berhasil");
+            
+        } catch (error) {
+            console.log(error);
+            
+        } finally {
+            secureLocalStorage.removeItem("token");
+            secureLocalStorage.removeItem("user");
+            setCurrentUser(null);
+            navigate("/", { replace: true });
+        }
+    }
+
   return (
     <div id="TopBar" className="flex items-center justify-between gap-[30px]">
                 <form action="" className="flex items-center w-full max-w-[450px] rounded-full border border-[#CFDBEF] gap-3 px-5 transition-all duration-300 focus-within:ring-2 focus-within:ring-[#662FFF]">
@@ -10,8 +34,8 @@ export default function Header(){
                 </form>
                 <div className="relative flex items-center justify-end gap-[14px] group">
                     <div className="text-right">
-                        <p className="font-semibold">Puyol Ferguso</p>
-                        <p className="text-sm leading-[21px] text-[#838C9D]">Admin</p>
+                        <p className="font-semibold">{currentUser?.name}</p>
+                        <p className="text-sm leading-[21px] text-[#838C9D]">{currentUser?.role}</p>
                     </div>
                     <button type="button" id="profileButton" className="flex shrink-0 w-[50px] h-[50px] rounded-full overflow-hidden">
                         <img src="/assets/images/photos/photo-1.png" className="w-full h-full object-cover" alt="profile photos"/>
@@ -28,8 +52,11 @@ export default function Header(){
                                 <Link to="#">Settings</Link>
                             </li>
                             <li className="font-semibold">
-                                <Link to="signin.html">Logout</Link>
+                                <button onClick={handleLogout}>
+                                Logout
+                            </button>
                             </li>
+                            
                         </ul>
                     </div>
                 </div>

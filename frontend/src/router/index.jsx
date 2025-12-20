@@ -7,39 +7,79 @@ import ManageCerita from '../admin/pages/cerita-manage';
 import ProvinsiItem from '../admin/pages/provinsi/provinsi-item';
 import ManageProvinsiPage from '../admin/pages/provinsi';
 import CreateProvinsiPage from '../admin/pages/provinsi-create/provinsi-create';
+import LandingPage from '../public/pages';
+import Peta from '../public/pages/peta';
+import ProtectedRoute from '../public/components/protectedRoute';
+import RequireAdmin from '../public/components/requireAdmin';
+import ManageUser from '../admin/pages/users/manageUser';
+import CeritaPulauPage from '../public/pages/cerita/CeritaPage';
+import CeritaDetailPage from '../public/pages/cerita/CeritaDetailPage';
 
 // Route admin
 const router = createBrowserRouter([
   {
-    path: '/dashboard',
-    element: <LayoutDashboard />,
+    element: <RequireAdmin />,
     children: [
       {
         path: '/dashboard',
-        element: <DashboardAmin />
+        element: <LayoutDashboard />,
+        children: [
+          {
+            index: true,
+            element: <DashboardAmin />
+          },
+          {
+            path: '/dashboard/cerita',
+            element: <CeritaPage />
+          },
+          {
+            path: '/dashboard/cerita/create',
+            element: <CreateCeritaPage />
+          },
+          {
+            path: '/dashboard/cerita/:id/manage',
+            element: <ManageCerita />
+          },
+          {
+            path: '/dashboard/provinsi',
+            element: <ManageProvinsiPage />
+          },
+          {
+            path: '/dashboard/provinsi/create',
+            element: <CreateProvinsiPage />
+          },
+          {
+            path: '/dashboard/manage-users',
+            element: <ManageUser/>
+          }
+        ],
+      },
+    ]
+  },
+
+  // Route public
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: '/peta',
+        element: <Peta />
       },
       {
-        path: '/dashboard/cerita',
-        element: <CeritaPage />
+        path: '/cerita/:pulauKey',
+        element: <CeritaPulauPage />
       },
       {
-        path: '/dashboard/cerita/create',
-        element: <CreateCeritaPage />
-      },
-      {
-        path: '/dashboard/cerita/:id/manage',
-        element: <ManageCerita />
-      },
-      {
-        path: '/dashboard/provinsi',
-        element: <ManageProvinsiPage />
-      },
-      {
-        path: '/dashboard/provinsi/create',
-        element: <CreateProvinsiPage />
+        path: "/story/:slug" ,
+        element: <CeritaDetailPage />
       }
     ]
   }
+
 ])
 
 export default router;

@@ -5,209 +5,190 @@ namespace App\Http\Controllers;
 use App\Models\Cerita;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class CeritaController extends Controller
 {
     public function index(Request $request)
     {
         $q = Cerita::query()
-            ->with(['provinsi:id,name,code','user:id,name'])
-            ->filter($request->only('search','provinsi_id','status','is_published'))
+            ->with(['provinsi:id,name', 'user:id,name'])
+            ->when($request->filled('search'), function ($qq) use ($request) {
+                $s = trim($request->query('search'));
+                $qq->where(function ($w) use ($s) {
+                    $w->where('judul', 'like', "%{$s}%")
+                      ->orWhere('cerita', 'like', "%{$s}%");
+                });
+            })
+            ->when(
+                $request->filled('provinsi_id'),
+                fn($qq) => $qq->where('provinsi_id', $request->query('provinsi_id'))
+            )
             ->orderByDesc('published_at')
             ->orderByDesc('id');
 
-        if (!$request->user() || !$request->boolean('include_unpublished')) {
-            $q->public();
+        $user = $request->user();
+        $includeUnpublished = $request->boolean('include_unpublished');
+
+        if (!$user || $user->role !== 'admin' || !$includeUnpublished) {
+            $q->where('is_published', true);
+        } else {
+            if ($request->filled('is_published')) {
+                $q->where('is_published', filter_var($request->query('is_published'), FILTER_VALIDATE_BOOLEAN));
+            }
         }
 
         $perPage = (int) $request->query('per_page', 15);
         return response()->json($q->paginate($perPage));
-
-        // $cerita = Cerita::all();
-        // return response()->json($cerita);
     }
 
-     public function show(Cerita $ceritum)
+    public function show(Cerita $cerita)
     {
-        if (!$ceritum->is_published || $ceritum->status !== 'approved') {
-            $this->authorizeView($ceritum);
+        if (!$cerita->is_published) {
+            $this->authorizeAdmin(auth()->user());
         }
-        $ceritum->load(['provinsi:id,name,code,lat,lng','user:id,name']);
-        return response()->json($ceritum);
+
+        $cerita->load(['provinsi:id,name', 'user:id,name']);
+        return response()->json($cerita);
     }
 
     public function showBySlug(string $slug)
     {
-        $ceritum = Cerita::where('slug', $slug)->firstOrFail();
-        if (!$ceritum->is_published || $ceritum->status !== 'approved') {
-            $this->authorizeView($ceritum);
+        $cerita = Cerita::where('slug', $slug)->firstOrFail();
+
+        if (!$cerita->is_published) {
+            $this->authorizeAdmin(auth()->user());
         }
-        $ceritum->load(['provinsi:id,name,code,lat,lng','user:id,name']);
-        return response()->json($ceritum);
+
+        $cerita->load(['provinsi:id,name', 'user:id,name']);
+        return response()->json($cerita);
     }
 
     public function store(Request $request)
     {
-        $user = $request->user();
+        $this->authorizeAdmin($request->user());
 
         $data = $request->validate([
-            'provinsi_id' => ['required','exists:provinsi,id'],
-            'judul'       => ['required','string','max:200'],
-            'slug'        => ['nullable','string','max:220','unique:cerita,slug'],
-            'summary'     => ['nullable','string'],
-            'cerita'      => ['required','string'],
-            'status'      => ['nullable', Rule::in(['draft','pending','approved','rejected'])],
-            'is_published'=> ['nullable','boolean'],
-            'published_at'=> ['nullable','date'],
+            'provinsi_id'  => ['required', 'exists:provinsi,id'],
+            'judul'        => ['required', 'string', 'max:200', 'unique:cerita,judul'],
+            'slug'         => ['nullable', 'string', 'max:220', 'unique:cerita,slug'],
+            'cerita'       => ['required', 'string'],
+            'thumbnail'    => ['nullable', 'image'],
+            'is_published' => ['nullable', 'boolean'],
+            'published_at' => ['nullable', 'date'],
         ]);
 
-        $data['user_id'] = $user->id;
-        $data['status'] = $data['status'] ?? 'pending';
+        $data['user_id'] = $request->user()->id;
 
         if (empty($data['slug'])) {
             $data['slug'] = $this->makeUniqueSlug($data['judul']);
         }
+        $isPublished = (bool) ($data['is_published'] ?? false);
+        $publishedAt = $data['published_at'] ?? null;
 
-        [$data['is_published'], $data['status'], $data['published_at']] =
-            $this->normalizePublishFields(
-                $data['is_published'] ?? false,
-                $data['status'],
-                $data['published_at'] ?? null
-            );
+        if ($isPublished) {
+            $data['is_published'] = true;
+            $data['published_at'] = $publishedAt ? Carbon::parse($publishedAt) : now();
+        } else {
+            $data['is_published'] = false;
+            $data['published_at'] = null;
+        }
 
-        $cerita = Cerita::create($data);
-        return response()->json($cerita, 201);
+         $cerita = DB::transaction(function () use ($request, $data) {
+        if ($request->hasFile('thumbnail')) {
+            $path = $request->file('thumbnail')->store('thumbnails', 'public');
+            $data['thumbnail'] = $path;
+        }
+
+        return Cerita::create($data);
+    });
+
+
+        return response()->json(
+            $cerita->load(['provinsi:id,name', 'user:id,name']),
+            201
+        );
     }
 
-    public function update(Request $request, Cerita $ceritum)
+    public function update(Request $request, Cerita $cerita)
     {
-        $this->authorizeOwnerOrAdmin($request->user(), $ceritum);
+        $this->authorizeAdmin($request->user());
 
         $data = $request->validate([
-            'provinsi_id' => ['sometimes','required','exists:provinsi,id'],
-            'judul'       => ['sometimes','required','string','max:200'],
-            'slug'        => [
-                'nullable','string','max:220',
-                Rule::unique('cerita','slug')->ignore($ceritum->id)
+            'provinsi_id'  => ['sometimes', 'required', 'exists:provinsi,id'],
+            'judul'        => [
+                'sometimes', 'required', 'string', 'max:200',
+                Rule::unique('cerita', 'judul')->ignore($cerita->id),
             ],
-            'summary'     => ['nullable','string'],
-            'cerita'      => ['sometimes','required','string'],
-            'status'      => ['nullable', Rule::in(['draft','pending','approved','rejected'])],
-            'is_published'=> ['nullable','boolean'],
-            'published_at'=> ['nullable','date'],
+            'slug'         => [
+                'nullable', 'string', 'max:220',
+                Rule::unique('cerita', 'slug')->ignore($cerita->id),
+            ],
+            'cerita'       => ['sometimes', 'required', 'string'],
+            'is_published' => ['nullable', 'boolean'],
+            'published_at' => ['nullable', 'date'],
         ]);
+        if (array_key_exists('judul', $data) && empty($data['slug'])) {
+            $data['slug'] = $this->makeUniqueSlug($data['judul'], $cerita->id);
+        }
+        if (array_key_exists('is_published', $data) || array_key_exists('published_at', $data)) {
+            $isPublished = (bool) ($data['is_published'] ?? $cerita->is_published);
+            $publishedAt = $data['published_at'] ?? $cerita->published_at;
 
-        if (isset($data['judul']) && empty($data['slug'])) {
-            $data['slug'] = $this->makeUniqueSlug($data['judul'], $ceritum->id);
+            if ($isPublished) {
+                $data['is_published'] = true;
+                $data['published_at'] = $publishedAt ? Carbon::parse($publishedAt) : ($cerita->published_at ?? now());
+            } else {
+                $data['is_published'] = false;
+                $data['published_at'] = null;
+            }
         }
 
-        if (array_key_exists('is_published', $data) || array_key_exists('status', $data) || array_key_exists('published_at', $data)) {
-            [$data['is_published'], $data['status'], $data['published_at']] =
-                $this->normalizePublishFields(
-                    $data['is_published'] ?? $ceritum->is_published,
-                    $data['status'] ?? $ceritum->status,
-                    $data['published_at'] ?? $ceritum->published_at
-                );
-        }
+        $cerita->update($data);
 
-        $ceritum->update($data);
-        return response()->json($ceritum);
+        return response()->json($cerita->load(['provinsi:id,name', 'user:id,name']));
     }
-
-    public function destroy(Request $request, Cerita $ceritum)
-    {
-        $this->authorizeOwnerOrAdmin($request->user(), $ceritum);
-        $ceritum->delete();
-        return response()->json([
-            'message' => 'Cerita deleted successfully.'
-        ]);
-    }
-
-    public function approve(Request $request, Cerita $ceritum)
+    public function destroy(Request $request, Cerita $cerita)
     {
         $this->authorizeAdmin($request->user());
-        $ceritum->status = 'approved';
-        if ($ceritum->is_published && !$ceritum->published_at) {
-            $ceritum->published_at = now();
-        }
-        $ceritum->save();
+        $cerita->delete();
 
-        return response()->json($ceritum);
+        return response()->json(['message' => 'Cerita deleted successfully.']);
     }
-
-    public function reject(Request $request, Cerita $ceritum)
+    public function publish(Request $request, Cerita $cerita)
     {
         $this->authorizeAdmin($request->user());
-        $ceritum->status = 'rejected';
-        $ceritum->is_published = false;
-        $ceritum->save();
 
-        return response()->json($ceritum);
+        $cerita->is_published = true;
+        $cerita->published_at = $cerita->published_at ?? now();
+        $cerita->save();
+
+        return response()->json($cerita->load(['provinsi:id,name', 'user:id,name']));
     }
-
-    public function publish(Request $request, Cerita $ceritum)
-    {
-        $this->authorizeOwnerOrAdmin($request->user(), $ceritum);
-
-        if ($ceritum->status !== 'approved') {
-            return response()->json(['message' => 'Cerita belum di-approve.'], 422);
-        }
-
-        $ceritum->is_published = true;
-        $ceritum->published_at = $ceritum->published_at ?? now();
-        $ceritum->save();
-
-        return response()->json($ceritum);
-    }
-
 
     private function makeUniqueSlug(string $judul, ?int $ignoreId = null): string
     {
         $base = Str::slug($judul);
         $slug = $base;
         $i = 1;
-        while (Cerita::where('slug',$slug)
-            ->when($ignoreId, fn($q) => $q->where('id','!=',$ignoreId))
-            ->exists()) {
+
+        while (
+            Cerita::where('slug', $slug)
+                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
             $slug = "{$base}-{$i}";
             $i++;
         }
+
         return $slug;
     }
 
-    private function normalizePublishFields($isPublished, $status, $publishedAt)
-    {
-        if ($isPublished && $status === 'approved') {
-            $publishedAt = $publishedAt ? Carbon::parse($publishedAt) : now();
-            return [true, 'approved', $publishedAt];
-        }
-        if ($isPublished && $status !== 'approved') {
-            return [false, 'pending', null];
-        }
-        return [false, $status ?? 'pending', null];
-    }
-
-    private function authorizeOwnerOrAdmin($user, Cerita $cerita)
-    {
-        if (!$user) abort(401, 'Unauthorized.');
-        if ($user->role !== 'admin' && $cerita->user_id !== $user->id) {
-            abort(403, 'Forbidden.');
-        }
-    }
-
-    private function authorizeAdmin($user)
+    private function authorizeAdmin($user): void
     {
         if (!$user) abort(401, 'Unauthorized.');
         if ($user->role !== 'admin') abort(403, 'Forbidden.');
-    }
-
-    private function authorizeView(Cerita $cerita)
-    {
-        $u = auth()->user();
-        if (!$u) abort(403, 'Forbidden.');
-        if ($u->role !== 'admin' && $u->id !== $cerita->user_id) {
-            abort(403, 'Forbidden.');
-        }
     }
 }

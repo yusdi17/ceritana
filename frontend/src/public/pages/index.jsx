@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import landingpage from "../assets/landingpage.svg";
 import landingpage2 from "../assets/landingpage2.svg";
 import landingpage3 from "../assets/landingpage3.svg";
+import Navbar from "../components/navbar";
+import LoginModal from "../../auth/login";
+import RegisterModal from "../../auth/register";
 
 export default function LandingPage() {
     const backgrounds = [
@@ -13,6 +16,27 @@ export default function LandingPage() {
     ];
 
     const [currentBackground, setCurrentBackground] = useState(0);
+
+    const [isLoginOpen, setIsLoginOpen] = useState(false);
+    const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+    const [redirectAfterLogin, setRedirectAfterLogin] = useState("/");
+
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (location.state?.showLogin) {
+            setIsLoginOpen(true);
+            const from = location.state?.from?.pathname || "/";
+            setRedirectAfterLogin(from);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, navigate]);
+
+    const handleLoginSuccess = () => {
+        setIsLoginOpen(false);
+        navigate(redirectAfterLogin, { replace: true });
+    };
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -24,6 +48,7 @@ export default function LandingPage() {
 
     return (
         <div className="relative w-full h-screen overflow-hidden">
+            <Navbar />
             <div className="relative w-full h-full">
                 {backgrounds.map((bg, index) => (
                     <img
@@ -38,7 +63,7 @@ export default function LandingPage() {
 
             <div className="absolute bottom-0 w-full bg-white p-8 flex flex-col items-center shadow-lg">
                 <p className="text-gray-700 text-center text-lg mb-4">
-                    Temukan cerita rakyat dari berbagai budaya di Indonesia dalam satu klik. 
+                    Temukan cerita rakyat dari berbagai budaya di Indonesia dalam satu klik.
                     Klik daerahnya, dengar kisahnya, dan kenali cerita didalamnya!
                 </p>
                 <Link
@@ -49,6 +74,24 @@ export default function LandingPage() {
                     Lihat Peta
                 </Link>
             </div>
+
+            <LoginModal
+                isOpen={isLoginOpen}
+                onClose={() => setIsLoginOpen(false)}
+                onSwitchToRegister={() => {
+                    setIsLoginOpen(false);
+                    setIsRegisterOpen(true);
+                }}
+                onSuccess={handleLoginSuccess}
+            />
+            <RegisterModal
+                isOpen={isRegisterOpen}
+                onClose={() => setIsRegisterOpen(false)}
+                onSwitchToLogin={() => {
+                    setIsRegisterOpen(false);
+                    setIsLoginOpen(true);
+                }}
+            />
         </div>
     );
 }

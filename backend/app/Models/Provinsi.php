@@ -13,12 +13,8 @@ class Provinsi extends Model
 
     protected $table = 'provinsi';
 
-    protected $fillable = ['name','code','lat','lng'];
+    protected $fillable = ['name'];
 
-    protected $casts = [
-        'lat' => 'decimal:6',
-        'lng' => 'decimal:6',
-    ];
 
     public function cerita()
     {
