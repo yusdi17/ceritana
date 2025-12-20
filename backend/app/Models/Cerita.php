@@ -19,9 +19,8 @@ class Cerita extends Model
         'user_id',
         'judul',
         'slug',
-        'summary',
+        'thumbnail',
         'cerita',
-        'status',
         'is_published',
         'published_at'
     ];
@@ -59,7 +58,6 @@ class Cerita extends Model
         }
         if (!empty($f['provinsi_id'])) $q->where('provinsi_id', $f['provinsi_id']);
         if (!empty($f['user_id']))     $q->where('user_id', $f['user_id']);
-        if (!empty($f['status']))      $q->where('status', $f['status']);
         if (isset($f['is_published'])) $q->where('is_published', (bool)$f['is_published']);
 
         return $q;
@@ -68,5 +66,12 @@ class Cerita extends Model
     public function media()
     {
         return $this->hasMany(StoryMedia::class, 'cerita_id')->ordered();
+    }
+
+    protected $appends = ['thumbnail_url'];
+
+    public function getThumbnailUrlAttribute()
+    {
+        return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
     }
 }

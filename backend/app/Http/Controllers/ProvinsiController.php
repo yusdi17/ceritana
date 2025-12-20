@@ -12,26 +12,19 @@ class ProvinsiController extends Controller
 {
     public function index(Request $request)
     {
-        // $q = Provinsi::query();
-
-        // if ($s = $request->query('search')) {
-        //     $q->where(function ($w) use ($s) {
-        //         $w->where('name', 'like', "%{$s}%")
-        //             ->orWhere('code', 'like', "%{$s}%");
-        //     });
-        // }
-
-        // $q->orderBy('name');
-
-        // $perPage = (int) $request->query('per_page', 15);
-        // return response()->json($q->paginate($perPage));
-
         $provinsi = Provinsi::all();
         return response()->json($provinsi);
     }
 
     public function store(StoreProvinsiRequest $request)
     {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['message' => 'Unauthorized.'], 401);
+        }
+        if ($authUser->role !== "admin") {
+            return response()->json(['message' => 'Anda bukan admin.'], 403);
+        }
         $provinsi = Provinsi::create($request->validated());
         return response()->json($provinsi, 201);
     }
@@ -81,15 +74,22 @@ class ProvinsiController extends Controller
         }
     }
 
-    public function destroy($id)
-    {
+    public function destroy(Request $request, $id)
+    { 
+         $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['message' => 'Unauthorized.'], 401);
+        }
+        if ($authUser->role !== "admin") {
+            return response()->json(['message' => 'Anda bukan admin.'], 403);
+        }  
         $provinsi = Provinsi::findOrFail($id);
         if (!$provinsi) {
             return response()->json(['message' => 'Provinsi not found'], 404);
         }
         $provinsi->delete();
         return response()->json([
-            'message' => 'Provinsi deleted successfully.'
+            'message' => 'Pulau Berhasil dihapus'
         ], 200);
     }
 }

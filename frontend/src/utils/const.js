@@ -1,0 +1,1 @@
+export const STORAGE_KEY = import.meta.env.VITE_STORAGE_HASH_KEY

@@ -34,11 +34,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(SocialAccount::class);
     }
-
-    public function permintaanKontributor()
-    {
-        return $this->hasOne(PermintaanKontributor::class);
-    }
+    
 
 
     /**
