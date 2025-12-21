@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_GOOGLE_CLIENT_ID: 814391480881-t1o48d9t2t04pmpdvtblh9t6jr5g3gkj.apps.googleusercontent.com
+        API_URL: "http://92.113.124.171:8001/api"
+        VITE_STORAGE_HASH_KEY: "hashkey2025"
     container_name: ceritana-frontend
     restart: always
     ports:
