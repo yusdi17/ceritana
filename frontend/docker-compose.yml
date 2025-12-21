@@ -1,6 +1,12 @@
+version: '3.8'
+
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: 814391480881-t1o48d9t2t04pmpdvtblh9t6jr5g3gkj.apps.googleusercontent.com
     container_name: ceritana-frontend
     restart: always
     ports:
