@@ -14,6 +14,8 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@master
         with:
+          timeout: 30m
+          command_timeout: 30m
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.PRIVATE_KEY }}
