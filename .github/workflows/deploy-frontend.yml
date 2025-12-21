@@ -1,0 +1,31 @@
+name: Auto Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            # folder React
+            cd ceritana/frontend
+            
+            # Tarik kodingan terbaru
+            git pull origin main
+            
+            # Build ulang Container
+            docker compose up -d --build
+            
+            # Hapus image bekas
+            docker image prune -f
