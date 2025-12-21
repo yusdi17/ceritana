@@ -49,7 +49,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister, onSucc
         prompt: "select_account",
         onSuccess: async ({ access_token }) => {
             try {
-                const res = await axios.post("http://127.0.0.1:8000/api/auth/google", {
+                const res = await axios.post("http://92.113.124.171:8001/api/auth/google", {
                     access_token,
                 });
 

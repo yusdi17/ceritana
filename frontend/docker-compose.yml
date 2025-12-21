@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    container_name: ceritana-frontend
+    restart: always
+    ports:
+      - "3000:80"
